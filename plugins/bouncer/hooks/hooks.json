@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "type": "command",
+        "bash": "${CLAUDE_PLUGIN_ROOT}/scripts/bouncer-hook.sh",
+        "powershell": "& \"${CLAUDE_PLUGIN_ROOT}/scripts/bouncer-hook.ps1\""
+      }
+    ]
+  }
+}
