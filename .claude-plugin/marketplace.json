@@ -1,0 +1,19 @@
+{
+  "name": "agent-plugins",
+  "owner": {
+    "name": "Matt Kotsenas",
+    "email": "mattkot@users.noreply.github.com"
+  },
+  "metadata": {
+    "description": "Plugin marketplace for Claude Code and Copilot CLI agent plugins.",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "bouncer",
+      "source": "MattKotsenas/agent-plugins:plugins/bouncer",
+      "description": "PreToolUse hook that blocks dangerous tool calls with fast rules and LLM fallback.",
+      "version": "1.0.0"
+    }
+  ]
+}
