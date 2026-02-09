@@ -17,6 +17,15 @@
       },
       "description": "PreToolUse hook that blocks dangerous tool calls with fast rules and LLM fallback.",
       "version": "1.0.0"
+    },
+    {
+      "name": "delve",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/MattKotsenas/agent-plugins.git"
+      },
+      "description": "Interactive diff review skill that walks a human reviewer through chunked, screen-sized diffs and captures TODOs for downstream agents.",
+      "version": "1.0.0"
     }
   ]
 }
