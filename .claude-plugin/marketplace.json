@@ -12,8 +12,8 @@
     {
       "name": "bouncer",
       "source": {
-        "source": "github",
-        "repo": "MattKotsenas/Bouncer"
+        "source": "url",
+        "url": "https://github.com/MattKotsenas/Bouncer.git"
       },
       "description": "PreToolUse hook that blocks dangerous tool calls with fast rules and LLM fallback.",
       "version": "1.0.0"
