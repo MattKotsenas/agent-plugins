@@ -70,8 +70,12 @@ that the reviewer will see together on one screen.
 
 ### 3.1 Constraints (co-optimize all four)
 
-1. **Screen fit** — a chunk should fit comfortably on one screen (~60 lines of
-   diff). If a single hunk exceeds this, it becomes its own chunk.
+> [!NOTE]
+> The **screen-fit target** is ~40 lines of diff per chunk. This value is
+> referenced throughout this skill.
+
+1. **Screen fit** — a chunk should fit comfortably on one screen (within the
+   screen-fit target). If a single hunk exceeds this, it becomes its own chunk.
 2. **High cohesion** — group hunks that belong to the same logical change:
    same function, same module, same feature.
 3. **Utility function placement**:
@@ -91,7 +95,7 @@ that the reviewer will see together on one screen.
 2. Score each potential chunk grouping by:
    - **Cohesion**: how many hunks in the chunk share the same symbol or module.
    - **Dependency direction**: does the chunk show implementations before uses?
-   - **Screen fit**: is the total diff size ≤ ~60 lines?
+   - **Screen fit**: is the total diff size within the screen-fit target?
    - **Utility likelihood**: is this a standalone helper? (heuristic: small
      function, many callers, few dependencies)
 3. Greedily assemble chunks that maximize the combined score.
@@ -118,20 +122,20 @@ Walk through the Diff Plan one chunk at a time.
    Show the unified diff for all hunks in this chunk. Include:
    - File path(s)
    - Enclosing symbol(s)
-   - The diff itself (with syntax highlighting if the agent supports it)
+   - The diff itself, using a fenced code block with the `diff` language
+     identifier (` ```diff `). This produces colored +/- line highlighting
+     in most terminal renderers. Do NOT use the file's own language identifier
+     (e.g., ` ```python `) — it highlights syntax but loses diff coloring.
 
-2. **Prompt the user for an action:**
-   - **Next** — advance to the next chunk
-   - **Previous** — go back to the prior chunk
-   - **Comment** — leave a review comment on this chunk
+2. **Prompt the user for an action.**
+   Present **Next** and **Previous** as choices, but also allow freeform text
+   input in the same prompt. Any freeform text the user types is treated as a
+   review comment on the current chunk — create a TODO (see Phase 5) and then
+   re-display the same prompt so the user can continue commenting or navigate.
+   This avoids requiring a separate "Comment" selection followed by a second
+   prompt for the comment text.
 
-3. **If the user selects Comment:**
-   - Collect the comment text from the user.
-   - Create a TODO (see Phase 5).
-   - After capturing the comment, prompt again (Next / Previous / Comment).
-     The user can leave multiple comments on the same chunk.
-
-4. **Navigation rules:**
+3. **Navigation rules:**
    - Track the current chunk index.
    - "Previous" on the first chunk does nothing (tell the user they're at the
      start).
