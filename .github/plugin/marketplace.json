@@ -10,16 +10,6 @@
   },
   "plugins": [
     {
-      "name": "bouncer",
-      "source": {
-        "source": "url",
-        "url": "https://github.com/MattKotsenas/Bouncer.git"
-      },
-      "description": "PreToolUse hook that blocks dangerous tool calls with fast rules and LLM fallback.",
-      "version": "1.0.0",
-      "skills": []
-    },
-    {
       "name": "delve",
       "source": {
         "source": "url",
