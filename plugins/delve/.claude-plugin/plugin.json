@@ -1,7 +1,7 @@
 {
-  "name": "agent-plugins",
+  "name": "delve",
   "version": "1.0.0",
-  "description": "Plugin marketplace with built-in review skills.",
+  "description": "Interactive diff review skill that walks a human reviewer through chunked, screen-sized diffs and captures TODOs for downstream agents.",
   "author": {
     "name": "Matt Kotsenas",
     "url": "https://github.com/MattKotsenas"
@@ -13,8 +13,5 @@
     "code-review",
     "copilot",
     "claude"
-  ],
-  "skills": [
-    "./skills/delve"
   ]
 }

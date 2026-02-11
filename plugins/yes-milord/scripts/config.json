@@ -1,0 +1,8 @@
+{
+  "enabled": true,
+  "active_pack": "peasant",
+  "categories": {
+    "acknowledge": true,
+    "complete": true
+  }
+}

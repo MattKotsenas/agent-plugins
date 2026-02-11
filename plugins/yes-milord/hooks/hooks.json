@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "hooks": {
+    "userPromptSubmitted": [
+      {
+        "type": "command",
+        "powershell": "& \"${CLAUDE_PLUGIN_ROOT}/scripts/play-sound.ps1\""
+      }
+    ],
+    "sessionEnd": [
+      {
+        "type": "command",
+        "powershell": "& \"${CLAUDE_PLUGIN_ROOT}/scripts/play-sound.ps1\""
+      }
+    ]
+  }
+}
