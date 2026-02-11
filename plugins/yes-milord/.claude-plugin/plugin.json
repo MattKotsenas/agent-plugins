@@ -1,0 +1,42 @@
+{
+  "name": "yes-milord",
+  "version": "1.0.0",
+  "description": "Warcraft II Peasant sound notifications for agent lifecycle events.",
+  "author": {
+    "name": "Matt Kotsenas",
+    "url": "https://github.com/MattKotsenas"
+  },
+  "repository": "https://github.com/MattKotsenas/agent-plugins",
+  "license": "MIT",
+  "keywords": [
+    "sounds",
+    "notifications",
+    "warcraft",
+    "copilot",
+    "claude"
+  ],
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -ExecutionPolicy Bypass -File \"${CLAUDE_PLUGIN_ROOT}/scripts/play-sound.ps1\"",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -ExecutionPolicy Bypass -File \"${CLAUDE_PLUGIN_ROOT}/scripts/play-sound.ps1\"",
+            "async": true
+          }
+        ]
+      }
+    ]
+  }
+}

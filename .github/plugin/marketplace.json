@@ -6,19 +6,26 @@
   },
   "metadata": {
     "description": "Plugin marketplace for Claude Code and Copilot CLI agent plugins.",
-    "version": "1.0.0"
+    "version": "1.0.0",
+    "pluginRoot": "./plugins"
   },
   "plugins": [
     {
       "name": "delve",
-      "source": {
-        "source": "url",
-        "url": "https://github.com/MattKotsenas/agent-plugins.git"
-      },
+      "source": "plugins/delve",
       "description": "Interactive diff review skill that walks a human reviewer through chunked, screen-sized diffs and captures TODOs for downstream agents.",
       "version": "1.0.0",
       "skills": [
-        "delve"
+        "./skills/delve"
+      ]
+    },
+    {
+      "name": "yes-milord",
+      "source": "plugins/yes-milord",
+      "description": "Warcraft II Peasant sound notifications on agent lifecycle events.",
+      "version": "1.0.0",
+      "skills": [
+        "./skills/yes-milord-toggle"
       ]
     }
   ]

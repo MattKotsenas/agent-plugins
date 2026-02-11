@@ -1,0 +1,19 @@
+{
+  "name": "peasant",
+  "display_name": "Human Peasant (Warcraft II)",
+  "categories": {
+    "acknowledge": {
+      "sounds": [
+        { "file": "acknowledge2.wav", "line": "Right-o." },
+        { "file": "acknowledge3.wav", "line": "Yes, milord." },
+        { "file": "acknowledge4.wav", "line": "As you wish." }
+      ]
+    },
+    "complete": {
+      "sounds": [
+        { "file": "ready.wav", "line": "Ready, milord." },
+        { "file": "work-completed.wav", "line": "Work complete." }
+      ]
+    }
+  }
+}
