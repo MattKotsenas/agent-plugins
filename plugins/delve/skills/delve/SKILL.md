@@ -118,16 +118,43 @@ Walk through the Diff Plan one chunk at a time.
 
 ### For each chunk:
 
-1. **Display the chunk.**
-   Show the unified diff for all hunks in this chunk. Include:
-   - File path(s)
-   - Enclosing symbol(s)
-   - The diff itself, using a fenced code block with the `diff` language
-     identifier (` ```diff `). This produces colored +/- line highlighting
-     in most terminal renderers. Do NOT use the file's own language identifier
-     (e.g., ` ```python `) — it highlights syntax but loses diff coloring.
+1. **Extract the chunk diff to a file.**
+   Run a shell command that writes the chunk's hunks to a temp file. Use
+   output redirection so no diff content appears in stdout:
+   ```
+   git diff <base> <head> -- <file1> [<file2>...] > <session-dir>/delve-chunk.diff
+   ```
+   Where `<session-dir>` is the session workspace directory.
 
-2. **Prompt the user for an action.**
+2. **Display the chunk.**
+   Run the display script shipped with this plugin:
+
+   - **Windows (PowerShell):**
+     ```
+     & "<plugin-root>/scripts/delve-show-chunk.ps1" -DiffFile "<session-dir>/delve-chunk.diff" -StateDir "<session-dir>"
+     ```
+   - **Unix (Bash):**
+     ```
+     bash "<plugin-root>/scripts/delve-show-chunk.sh" --diff-file "<session-dir>/delve-chunk.diff" --state-dir "<session-dir>"
+     ```
+
+   Check the exit code:
+   - **Exit 0**: the diff is displayed in a terminal split pane using the
+     user's configured git pager (e.g., delta). Tell the user:
+     `"Chunk N/M displayed in the side pane: <file path(s)> — <symbol(s)>"`
+   - **Exit 1 (or any non-zero)**: no supported terminal multiplexer is
+     available. **Fall back to inline rendering**: show the diff using a
+     fenced code block with the `diff` language identifier (` ```diff `).
+     Do NOT use the file's own language identifier.
+
+   When displaying the next chunk, the script automatically closes the
+   previous chunk's pane before opening the new one. On the final chunk
+   (Phase 7), send the close signal to dismiss the pane:
+
+   - **Windows:** `"close" | Set-Content "<session-dir>/pane.close"`
+   - **Unix:** `echo "close" > "<session-dir>/pane.close"`
+
+3. **Prompt the user for an action.**
    Present **Next** and **Previous** as choices, but also allow freeform text
    input in the same prompt. Any freeform text the user types is treated as a
    review comment on the current chunk — create a TODO (see Phase 5) and then
@@ -135,7 +162,7 @@ Walk through the Diff Plan one chunk at a time.
    This avoids requiring a separate "Comment" selection followed by a second
    prompt for the comment text.
 
-3. **Navigation rules:**
+4. **Navigation rules:**
    - Track the current chunk index.
    - "Previous" on the first chunk does nothing (tell the user they're at the
      start).
