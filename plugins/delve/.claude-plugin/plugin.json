@@ -1,6 +1,6 @@
 {
   "name": "delve",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Interactive diff review skill that walks a human reviewer through chunked, screen-sized diffs and captures TODOs for downstream agents.",
   "author": {
     "name": "Matt Kotsenas",
