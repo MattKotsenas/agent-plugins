@@ -108,7 +108,7 @@ Store the ordered list of chunks with their hunk assignments. This is the
 Show the user a brief overview before starting the review loop:
 - Number of chunks
 - Files covered
-- Estimated review time (rough: ~1 min per chunk)
+- Estimated review time (rough: ~1 min per 30 lines of diff)
 
 ---
 
