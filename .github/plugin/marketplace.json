@@ -25,7 +25,7 @@
       "description": "Warcraft II Peasant sound notifications on agent lifecycle events.",
       "version": "1.0.0",
       "skills": [
-        "./skills/yes-milord-toggle"
+        "./skills/toggle"
       ]
     }
   ]

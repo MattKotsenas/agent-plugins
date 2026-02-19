@@ -1,5 +1,5 @@
 ---
-name: yes-milord-toggle
+name: toggle
 description: Toggle yes-milord sound notifications on/off. Use when user wants to mute, unmute, pause, or resume peasant sounds during a session.
 user_invocable: true
 ---
@@ -11,7 +11,7 @@ Toggle yes-milord sounds on or off.
 Run the following command using the Bash tool:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File "${CLAUDE_PLUGIN_ROOT}/scripts/play-sound.ps1" -toggle
+powershell -ExecutionPolicy Bypass -File "<plugin-root>/scripts/play-sound.ps1" -toggle
 ```
 
 Report the output to the user. The command will print either:
