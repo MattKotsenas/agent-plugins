@@ -21,6 +21,12 @@
       "source": "plugins/yes-milord",
       "description": "Warcraft II Peasant sound notifications on agent lifecycle events.",
       "version": "1.0.0"
+    },
+    {
+      "name": "prune",
+      "source": "plugins/prune",
+      "description": "Interactive branch cleanup — catalog, verify, and delete stale branches with squash-merge awareness.",
+      "version": "1.0.0"
     }
   ]
 }
