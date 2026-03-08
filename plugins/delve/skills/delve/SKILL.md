@@ -105,68 +105,98 @@ that the reviewer will see together on one screen.
 Store the ordered list of chunks with their hunk assignments. This is the
 **Diff Plan** — the sequence the reviewer will walk through.
 
-Show the user a brief overview before starting the review loop:
-- Number of chunks
-- Files covered
-- Estimated review time (rough: ~1 min per 30 lines of diff)
+### 3.4 Generate and Validate Chunk Files
+
+Before showing the Diff Plan to the user, verify that each planned chunk fits
+within the screen-fit target and then generate the final chunk files. This step
+is mandatory — do not skip it.
+
+1. **Measure line counts before writing files.** For each planned chunk, check
+   how many lines its diff would produce WITHOUT writing to a file:
+   - **Unix:** `git diff <base> <head> -- <file1> [<file2>...] | wc -l`
+   - **Windows:** `git diff <base> <head> -- <file1> [<file2>...] | Measure-Object -Line`
+
+2. **Re-plan any chunk that exceeds 40 lines:**
+   - If it contains hunks from **multiple files**: split into one chunk per
+     file and re-measure.
+   - If it contains **multiple hunks from one file**: split into one chunk per
+     hunk and re-measure.
+   - If a **single hunk** still exceeds 40 lines: keep it as one chunk. It
+     will be displayed with `view_range` pagination in Phase 4.
+
+3. **Write all chunk files in one pass** once every chunk is validated. Use
+   sequential numbering and output redirection (no diff content in stdout):
+   ```
+   git diff <base> <head> -- <file1> [<file2>...] > <session-dir>/delve-chunk-01.diff
+   git diff <base> <head> -- <file3> > <session-dir>/delve-chunk-02.diff
+   ```
+   Where `<session-dir>` is the session workspace directory.
+
+4. **Show the user** the validated Diff Plan:
+   - Number of chunks
+   - Files covered
+   - Estimated review time (rough: ~1 min per 30 lines of diff)
 
 ---
 
 ## Phase 4: Review Loop
 
-Walk through the Diff Plan one chunk at a time.
+Walk through the Diff Plan one chunk at a time. All chunk diff files were
+pre-generated in Phase 3.4 — no shell commands are needed during the review
+loop.
 
 ### For each chunk:
 
-1. **Extract the chunk diff to a file.**
-   Run a shell command that writes the chunk's hunks to a temp file. Use
-   output redirection so no diff content appears in stdout:
+1. **Display the chunk** using `show_file`:
+   - If the chunk file is **≤ 40 lines**:
+     ```
+     show_file(path: "<session-dir>/delve-chunk-NN.diff")
+     ```
+   - If the chunk file is **> 40 lines** (a single oversized hunk from
+     Phase 3.4 step 3):
+     ```
+     show_file(path: "<session-dir>/delve-chunk-NN.diff", view_range: [1, 40])
+     ```
+     Tell the user the chunk continues beyond what is shown. If they ask to
+     see more, show the next 40-line window with an updated `view_range`.
+
+2. **Prompt the user** with a structured form using `ask_user`:
+   ```json
+   {
+     "message": "Chunk N/M: <file path(s)> — <symbol(s)>",
+     "requestedSchema": {
+       "properties": {
+         "action": {
+           "type": "string",
+           "title": "Action",
+           "enum": ["Next", "Comment & stay", "Previous", "Done"],
+           "enumNames": ["Next →", "💬 Comment & stay", "← Previous", "Done ✓"],
+           "default": "Next"
+         },
+         "comment": {
+           "type": "string",
+           "title": "Comment (optional)",
+           "description": "Leave feedback on this chunk. Each submission = 1 TODO."
+         }
+       },
+       "required": ["action"]
+     }
+   }
    ```
-   git diff <base> <head> -- <file1> [<file2>...] > <session-dir>/delve-chunk.diff
-   ```
-   Where `<session-dir>` is the session workspace directory.
 
-2. **Display the chunk.**
-   Run the display script shipped with this plugin:
+3. **Process the response:**
+   - If `comment` is provided: create a TODO (Phase 5).
+   - If `action` = **"Next"**: advance to the next chunk (with or without a
+     comment). After leaving one or more comments, flip the default to "Next".
+   - If `action` = **"Comment & stay"**: capture the TODO and re-display the
+     same chunk's form for another comment.
+   - If `action` = **"Previous"**: go back one chunk. On the first chunk, tell
+     the user they are at the start.
+   - If `action` = **"Done"**: skip to Phase 7.
+   - If the user **declines** the form (cancels without submitting): treat as
+     "Next" with no comment.
 
-   - **Windows (PowerShell):**
-     ```
-     & "<plugin-root>/scripts/delve-show-chunk.ps1" -DiffFile "<session-dir>/delve-chunk.diff" -StateDir "<session-dir>"
-     ```
-   - **Unix (Bash):**
-     ```
-     bash "<plugin-root>/scripts/delve-show-chunk.sh" --diff-file "<session-dir>/delve-chunk.diff" --state-dir "<session-dir>"
-     ```
-
-   Check the exit code:
-   - **Exit 0**: the diff is displayed in a terminal split pane using the
-     user's configured git pager (e.g., delta). Tell the user:
-     `"Chunk N/M displayed in the side pane: <file path(s)> — <symbol(s)>"`
-   - **Exit 1 (or any non-zero)**: no supported terminal multiplexer is
-     available. **Fall back to inline rendering**: show the diff using a
-     fenced code block with the `diff` language identifier (` ```diff `).
-     Do NOT use the file's own language identifier.
-
-   When displaying the next chunk, the script automatically closes the
-   previous chunk's pane before opening the new one. On the final chunk
-   (Phase 7), send the close signal to dismiss the pane:
-
-   - **Windows:** `"close" | Set-Content "<session-dir>/pane.close"`
-   - **Unix:** `echo "close" > "<session-dir>/pane.close"`
-
-3. **Prompt the user for an action.**
-   Present **Next** and **Previous** as choices, but also allow freeform text
-   input in the same prompt. Any freeform text the user types is treated as a
-   review comment on the current chunk — create a TODO (see Phase 5) and then
-   re-display the same prompt so the user can continue commenting or navigate.
-   This avoids requiring a separate "Comment" selection followed by a second
-   prompt for the comment text.
-
-4. **Navigation rules:**
-   - Track the current chunk index.
-   - "Previous" on the first chunk does nothing (tell the user they're at the
-     start).
-   - "Next" on the last chunk triggers completion (Phase 7).
+4. **"Next" on the last chunk** triggers completion (Phase 7).
 
 ---
 
@@ -263,7 +293,8 @@ When the user advances past the last chunk:
   1. Choose baseline  →  merge base / last session / last change / custom
   2. Acquire diff     →  git diff per file, parse into hunks
   3. Plan chunks      →  group by cohesion, order by call flow
-  4. Review loop      →  display chunk → Next / Previous / Comment
+     Validate chunks  →  generate .diff files, enforce ≤ 40 lines, split if needed
+  4. Review loop      →  show_file chunk → ask_user (action + comment) → repeat
   5. Capture TODOs    →  structured TODOs with content anchors
   6. Complete         →  summary + TODO handoff
 ```
