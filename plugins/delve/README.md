@@ -2,21 +2,18 @@
 
 Review diffs the way you actually read code — one focused chunk at a time.
 
-Delve breaks a diff into small, logically grouped pieces, presents them in an
-order that makes sense, and captures your feedback as structured TODOs that the
-agent can act on immediately.
+Delve breaks a diff into small, logically grouped pieces, presents them in an order that makes sense, and captures your
+feedback as structured TODOs that the agent can act on immediately.
 
 ## Why Delve?
 
-- **Stay focused.** Large diffs are split into screen-sized chunks grouped by
-  related changes, so you never lose context.
-- **Review in the right order.** Intelligent ordering means you understand _what_ something
-  does before seeing _where_ it's used.
-- **Comments become actions.** Every piece of feedback you leave is captured as a
-  TODO with enough context for the agent to implement it — no copy-pasting, no
-  separate issue tracker.
-- **Pick up where you left off.** Session state is saved automatically. Come back
-  later and resume from the chunk you were on.
+- **Stay focused.** Large diffs are split into screen-sized chunks grouped by related changes, so you never lose context.
+- **Review in the right order.** Intelligent ordering means you understand _what_ something does before seeing _where_
+  it's used.
+- **Comments become actions.** Every piece of feedback you leave is captured as a TODO with enough context for the agent
+  to implement it - no copy-pasting, no separate issue tracker.
+- **Pick up where you left off.** Session state is saved automatically. Come back later and resume from the chunk you
+  were on.
 
 ## Installation
 
@@ -30,8 +27,8 @@ agent can act on immediately.
 ## Sample workflow
 
 > [!TIP]
-> The exchange below is condensed for readability. In practice, each `>`
-> block is a separate prompt/response in your terminal.
+> The exchange below is condensed for readability. In practice, each `>` block is a separate prompt/response in your
+> terminal.
 
 **1. Start a review**
 
@@ -87,8 +84,7 @@ Agent: Chunk 1 / 3 — New validateToken() helper
 **5. Leave feedback inline**
 
 ```
-You:  Should we throw instead of returning false? The caller
-      needs to know *why* validation failed.
+You:  Should we throw instead of returning false? The caller needs to know *why* validation failed.
 
 Agent: 📝 TODO captured. Still on Chunk 1/3.
        [Next]  [Previous]  or type a comment
@@ -119,7 +115,8 @@ Agent: ✅ Review complete
 
 The agent then applies your feedback automatically.
 
-## What about `/review`?
+## What about `/review` and `/diff`?
 
-The `/review` command is aimed at agents reviewing the code. `/delve`
-is aimed at _you_ reviewing the code.
+The `/review` command is aimed at agents reviewing the code. `/delve` is aimed at _you_ reviewing the code.
+The `/diff` command shows unstaged or branch diffs only. It doesn't provide guidance on the _order_ in which files are
+reviewed, nor does it allow for specifying the diff range.

@@ -8,8 +8,7 @@ description: >
 
 # Prune — Interactive Branch Cleanup
 
-Scan all branches, categorize by status, present for review, and delete
-approved branches.
+Scan all branches, categorize by status, present for review, and delete approved branches.
 
 ---
 
@@ -32,8 +31,7 @@ Run `git remote show <upstream>` or check for common default branches:
 
 ### 1.3 Confirm with user
 
-Present the detected upstream remote and target branch. Ask the user to
-confirm or override. Example:
+Present the detected upstream remote and target branch. Ask the user to confirm or override. Example:
 
 > Detected upstream: `upstream` → `akkadotnet/akka.net`, target branch: `dev`
 > Is this correct?
@@ -58,8 +56,7 @@ Run `git branch -vv --no-color` to get all local branches with:
 - Ahead/behind status
 - Last commit subject
 
-Also run `git branch -r --no-color` to get remote branches on `origin`
-(excluding upstream branches — those aren't ours).
+Also run `git branch -r --no-color` to get remote branches on `origin` (excluding upstream branches — those aren't ours).
 
 ### 2.3 Collect metadata
 
@@ -78,8 +75,7 @@ Skip tracking branches (`dev`, `main`, `master`) — never suggest deleting thes
 
 ## Phase 3: Categorize Each Branch
 
-For each non-tracking branch, determine its category. Try these checks
-**in order** — the first match wins.
+For each non-tracking branch, determine its category. Try these checks **in order** - the first match wins.
 
 ### 3.1 Check: Is it the current branch?
 
@@ -87,8 +83,8 @@ If `is_current` is true, category = **current** (never delete).
 
 ### 3.2 Check: Is it a rename of another branch?
 
-Compare the SHA against all other branches. If another branch has the
-**exact same SHA** and a different name, this is likely an old name.
+Compare the SHA against all other branches. If another branch has the **exact same SHA** and a different name, this is
+likely an old name.
 
 Category = **renamed** if:
 - Same SHA as another branch
@@ -105,8 +101,7 @@ Record which branch it was renamed to.
 git branch --merged <upstream>/<target>
 ```
 
-If the branch appears in this list, it was merged (not squash-merged).
-Category = **merged**.
+If the branch appears in this list, it was merged (not squash-merged). Category = **merged**.
 
 **Step B — Try PR-based verification (for squash merges):**
 
@@ -133,8 +128,8 @@ Continue to next check.
 
 ### 3.4 Check: Does it have an open PR?
 
-Search for open PRs from this branch using available tools (GitHub MCP,
-Azure DevOps MCP, `gh` CLI, or `az` CLI — same priority as step 3.3B).
+Search for open PRs from this branch using available tools (GitHub MCP, Azure DevOps MCP, `gh` CLI, or `az` CLI - same
+priority as step 3.3B).
 
 If found, category = **active_pr**. Record the PR number.
 
@@ -197,12 +192,10 @@ KEEPING (<count> branches)
    - Why it's safe to delete (PR number, rename target)
    - Exact delete commands (local + remote if applicable)
    - Exact undo command (git branch from SHA)
-4. **UNKNOWN section** — branches where the skill couldn't determine status.
-   Show the last commit subject to help the user decide.
-5. **KEEPING section** — brief, one line per branch. Just so the user can
-   verify nothing was miscategorized.
-6. **Use `-D` (force)** for delete commands, not `-d`, because squash-merged
-   branches won't be detected as merged by git.
+4. **UNKNOWN section** — branches where the skill couldn't determine status. Show the last commit subject to help the
+   user decide.
+5. **KEEPING section** — brief, one line per branch. Just so the user can verify nothing was miscategorized.
+6. **Use `-D` (force)** for delete commands, not `-d`, because squash-merged branches won't be detected as merged by git.
 
 ---
 
@@ -219,8 +212,7 @@ After presenting the view, ask the user which branches to delete:
 
 For approved branches:
 
-1. Switch to a safe branch first if the current branch is being deleted
-   (switch to the target branch, e.g., `dev`)
+1. Switch to a safe branch first if the current branch is being deleted (switch to the target branch, e.g., `dev`)
 2. Delete local branches: `git branch -D <name>`
 3. Delete remote branches: `git push origin --delete <name>`
 4. Report each deletion result (success/failure)
@@ -235,15 +227,12 @@ Report final state: how many branches remain.
 
 ## Error Handling
 
-- **PR tools unavailable**: If no GitHub MCP, Azure DevOps MCP, `gh` CLI,
-  or `az` CLI is available, skip PR-based verification. Categorize all
-  non-`--merged` branches as **unknown** and note that PR status couldn't
-  be checked.
-- **Remote deletion fails**: Report the error but continue with remaining
-  deletions. The branch may have already been deleted (e.g., by GitHub's
-  auto-delete on merge).
-- **Current branch in delete list**: Switch to target branch first. If the
-  switch fails, skip that branch and report the error.
+- **PR tools unavailable**: If no GitHub MCP, Azure DevOps MCP, `gh` CLI, or `az` CLI is available, skip PR-based
+  verification. Categorize all non-`--merged` branches as **unknown** and note that PR status couldn't be checked.
+- **Remote deletion fails**: Report the error but continue with remaining deletions. The branch may have already been
+  deleted (e.g., by GitHub's auto-delete on merge).
+- **Current branch in delete list**: Switch to target branch first. If the switch fails, skip that branch and report the
+  error.
 
 ---
 

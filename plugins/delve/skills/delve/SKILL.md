@@ -8,15 +8,14 @@ description: >
 
 # Delve — Interactive Diff Review
 
-Walk a reviewer through a diff one cohesive chunk at a time. Collect comments as
-structured TODOs that a downstream agent can act on.
+Walk a reviewer through a diff one cohesive chunk at a time. Collect comments as structured TODOs that a downstream
+agent can act on.
 
 ---
 
 ## Phase 1: Choose Diff Baseline
 
-**Always prompt the user to choose.** Suggest a default based on session history,
-but never auto-select.
+**Always prompt the user to choose.** Suggest a default based on session history, but never auto-select.
 
 Present these options:
 
@@ -38,35 +37,32 @@ After the user chooses, store the baseline in session state (see Phase 6).
 | Last change  | `HEAD` (if uncommitted) or `HEAD~1`          | working tree or `HEAD` |
 | Custom ref   | user-provided                                | user-provided or `HEAD` |
 
-If the target branch is unknown, ask the user. Common defaults: `main`, `master`,
-or the repo's default branch.
+If the target branch is unknown, ask the user. Common defaults: `main`, `master`, or the repo's default branch.
 
 ---
 
 ## Phase 2: Acquire the Diff
 
 1. Run `git diff --stat <base> <head>` to get the file-level summary.
-2. For each changed file, run `git diff <base> <head> -- <file>` to get the
-   full unified diff.
-3. Parse each file diff into **atomic hunks**. A hunk is one contiguous block of
-   changes (one `@@` section in unified diff format).
+2. For each changed file, run `git diff <base> <head> -- <file>` to get the full unified diff.
+3. Parse each file diff into **atomic hunks**. A hunk is one contiguous block of changes (one `@@` section in unified
+  diff format).
 4. For every hunk, record metadata:
    - **file path**
    - **change type**: added / modified / deleted / renamed
-   - **enclosing symbol**: the function, method, or class the hunk sits inside
-     (read the `@@` context line and surrounding code to determine this)
-   - **symbols referenced**: any functions, types, or variables that appear in
-     the changed lines
+   - **enclosing symbol**: the function, method, or class the hunk sits inside (read the `@@` context line and
+     surrounding code to determine this)
+   - **symbols referenced**: any functions, types, or variables that appear in the changed lines
 
-Process files one at a time to keep context usage bounded. Store hunk metadata
-as you go rather than holding every diff in context simultaneously.
+Process files one at a time to keep context usage bounded. Store hunk metadata as you go rather than holding every diff
+in context simultaneously.
 
 ---
 
 ## Phase 3: Plan the Chunk Order
 
-Group and order hunks into **chunks** — each chunk is a set of related hunks
-that the reviewer will see together on one screen.
+Group and order hunks into **chunks** — each chunk is a set of related hunks that the reviewer will see together on one
+screen.
 
 ### 3.1 Constraints (co-optimize all four)
 
@@ -74,58 +70,50 @@ that the reviewer will see together on one screen.
 > The **screen-fit target** is ~40 lines of diff per chunk. This value is
 > referenced throughout this skill.
 
-1. **Screen fit** — a chunk should fit comfortably on one screen (within the
-   screen-fit target). If a single hunk exceeds this, it becomes its own chunk.
-2. **High cohesion** — group hunks that belong to the same logical change:
-   same function, same module, same feature.
+1. **Screen fit** — a chunk should fit comfortably on one screen (within the screen-fit target). If a single hunk
+  exceeds this, it becomes its own chunk.
+2. **High cohesion** — group hunks that belong to the same logical change: same function, same module, same feature.
 3. **Utility function placement**:
-   - Show utility functions **first** if understanding them is required to
-     comprehend later chunks.
+   - Show utility functions **first** if understanding them is required to comprehend later chunks.
    - Show utility functions **last** if they are self-evident or rarely called.
-4. **Call flow** — prefer showing function implementations before their call
-   sites. The reader should understand *what* a function does before seeing
-   *where* it's used.
+4. **Call flow** — prefer showing function implementations before their call sites. The reader should understand *what*
+  a function does before seeing *where* it's used.
 
 ### 3.2 Heuristic: Build a Symbol Graph
 
 1. From the hunk metadata, build a graph:
-   - Nodes = symbols (functions, classes, methods) that were changed or
-     referenced in changed lines.
+   - Nodes = symbols (functions, classes, methods) that were changed or referenced in changed lines.
    - Edges = call/reference relationships (implementation → call site).
 2. Score each potential chunk grouping by:
    - **Cohesion**: how many hunks in the chunk share the same symbol or module.
    - **Dependency direction**: does the chunk show implementations before uses?
    - **Screen fit**: is the total diff size within the screen-fit target?
-   - **Utility likelihood**: is this a standalone helper? (heuristic: small
-     function, many callers, few dependencies)
+   - **Utility likelihood**: is this a standalone helper? (heuristic: small function, many callers, few dependencies)
 3. Greedily assemble chunks that maximize the combined score.
 
 ### 3.3 Output: the Diff Plan
 
-Store the ordered list of chunks with their hunk assignments. This is the
-**Diff Plan** — the sequence the reviewer will walk through.
+Store the ordered list of chunks with their hunk assignments. This is the **Diff Plan** - the sequence the reviewer will
+walk through.
 
 ### 3.4 Generate and Validate Chunk Files
 
-Before showing the Diff Plan to the user, verify that each planned chunk fits
-within the screen-fit target and then generate the final chunk files. This step
-is mandatory — do not skip it.
+Before showing the Diff Plan to the user, verify that each planned chunk fits within the screen-fit target and then
+generate the final chunk files. This step is mandatory - do not skip it.
 
-1. **Measure line counts before writing files.** For each planned chunk, check
-   how many lines its diff would produce WITHOUT writing to a file:
+1. **Measure line counts before writing files.** For each planned chunk, check how many lines its diff would produce
+  WITHOUT writing to a file:
    - **Unix:** `git diff <base> <head> -- <file1> [<file2>...] | wc -l`
    - **Windows:** `git diff <base> <head> -- <file1> [<file2>...] | Measure-Object -Line`
 
 2. **Re-plan any chunk that exceeds 40 lines:**
-   - If it contains hunks from **multiple files**: split into one chunk per
-     file and re-measure.
-   - If it contains **multiple hunks from one file**: split into one chunk per
-     hunk and re-measure.
-   - If a **single hunk** still exceeds 40 lines: keep it as one chunk. It
-     will be displayed with `view_range` pagination in Phase 4.
+   - If it contains hunks from **multiple files**: split into one chunk per file and re-measure.
+   - If it contains **multiple hunks from one file**: split into one chunk per hunk and re-measure.
+   - If a **single hunk** still exceeds 40 lines: keep it as one chunk. It will be displayed with `view_range`
+    pagination in Phase 4.
 
-3. **Write all chunk files in one pass** once every chunk is validated. Use
-   sequential numbering and output redirection (no diff content in stdout):
+3. **Write all chunk files in one pass** once every chunk is validated. Use sequential numbering and output redirection
+  (no diff content in stdout):
    ```
    git diff <base> <head> -- <file1> [<file2>...] > <session-dir>/delve-chunk-01.diff
    git diff <base> <head> -- <file3> > <session-dir>/delve-chunk-02.diff
@@ -141,9 +129,8 @@ is mandatory — do not skip it.
 
 ## Phase 4: Review Loop
 
-Walk through the Diff Plan one chunk at a time. All chunk diff files were
-pre-generated in Phase 3.4 — no shell commands are needed during the review
-loop.
+Walk through the Diff Plan one chunk at a time. All chunk diff files were pre-generated in Phase 3.4 - no shell commands
+are needed during the review loop.
 
 ### For each chunk:
 
@@ -157,8 +144,8 @@ loop.
      ```
      show_file(path: "<session-dir>/delve-chunk-NN.diff", view_range: [1, 40])
      ```
-     Tell the user the chunk continues beyond what is shown. If they ask to
-     see more, show the next 40-line window with an updated `view_range`.
+     Tell the user the chunk continues beyond what is shown. If they ask to see more, show the next 40-line window with
+     an updated `view_range`.
 
 2. **Prompt the user** with a structured form using `ask_user`:
    ```json
@@ -186,15 +173,12 @@ loop.
 
 3. **Process the response:**
    - If `comment` is provided: create a TODO (Phase 5).
-   - If `action` = **"Next"**: advance to the next chunk (with or without a
-     comment). After leaving one or more comments, flip the default to "Next".
-   - If `action` = **"Comment & stay"**: capture the TODO and re-display the
-     same chunk's form for another comment.
-   - If `action` = **"Previous"**: go back one chunk. On the first chunk, tell
-     the user they are at the start.
+   - If `action` = **"Next"**: advance to the next chunk (with or without a comment). After leaving one or more
+    comments, flip the default to "Next".
+   - If `action` = **"Comment & stay"**: capture the TODO and re-display the same chunk's form for another comment.
+   - If `action` = **"Previous"**: go back one chunk. On the first chunk, tell the user they are at the start.
    - If `action` = **"Done"**: skip to Phase 7.
-   - If the user **declines** the form (cancels without submitting): treat as
-     "Next" with no comment.
+   - If the user **declines** the form (cancels without submitting): treat as "Next" with no comment.
 
 4. **"Next" on the last chunk** triggers completion (Phase 7).
 
@@ -219,21 +203,17 @@ Each TODO must include:
 
 ### Where to store TODOs (tiered — use the first available option)
 
-1. **TodoWrite / built-in todo tool** — if the session has a todo or task
-   creation tool, write each TODO there.
-2. **External task tracker** — if a tool like Trekker is available, create
-   issues/tasks there.
-3. **Session file fallback** — write TODOs as a JSON array to a file in the
-   session workspace (e.g., `delve-todos.json`).
-4. **Context fallback** — if none of the above are available, output the TODO
-   list directly in the conversation for the user to copy.
+1. **TodoWrite / built-in todo tool** — if the session has a todo or task creation tool, write each TODO there.
+2. **External task tracker** — if a tool like Trekker is available, create issues/tasks there.
+3. **Session file fallback** — write TODOs as a JSON array to a file in the session workspace (e.g., `delve-todos.json`).
+4. **Context fallback** — if none of the above are available, output the TODO list directly in the conversation for the
+  user to copy.
 
 ---
 
 ## Phase 6: Session State
 
-Persist the following across the session so the review can be resumed or
-referenced later.
+Persist the following across the session so the review can be resumed or referenced later.
 
 | Key                | Value                                            |
 |--------------------|--------------------------------------------------|
@@ -241,7 +221,7 @@ referenced later.
 | `delve_head_ref`   | The HEAD ref at review start (for "last session")|
 | `delve_plan`       | The ordered list of chunks with hunk assignments |
 | `delve_position`   | Current chunk index                              |
-| `delve_completed`  | Set of chunk indices the user has visited         |
+| `delve_completed`  | Set of chunk indices the user has visited        |
 | `delve_todos`      | List of TODOs with context anchors               |
 
 ### Storage strategy (tiered — use the first available option)
@@ -255,14 +235,11 @@ referenced later.
    ```
    Store each key/value pair as a row. Values are JSON-encoded.
 
-2. **Session file fallback** — write state as a single JSON file in the session
-   workspace (e.g., `delve-state.json`).
+2. **Session file fallback** — write state as a single JSON file in the session workspace (e.g., `delve-state.json`).
 
 At the **start of a new delve session**, check for existing state:
-- If `delve_head_ref` exists from a prior session, offer it as the "Last
-  session" baseline option.
-- If `delve_plan` exists and the baseline hasn't changed, offer to resume
-  the previous review from `delve_position`.
+- If `delve_head_ref` exists from a prior session, offer it as the "Last session" baseline option.
+- If `delve_plan` exists and the baseline hasn't changed, offer to resume the previous review from `delve_position`.
 
 ---
 
@@ -281,8 +258,7 @@ When the user advances past the last chunk:
    - Hand off the TODO list to an implementation agent
 
 3. **Update session state:**
-   - Store the current HEAD as `delve_head_ref` so the next session can offer
-     "changes since last session" as a baseline.
+   - Store the current HEAD as `delve_head_ref` so the next session can offer "changes since last session" as a baseline.
 
 ---
 
