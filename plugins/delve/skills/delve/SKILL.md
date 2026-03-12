@@ -153,17 +153,17 @@ are needed during the review loop.
      "message": "Chunk N/M: <file path(s)> — <symbol(s)>",
      "requestedSchema": {
        "properties": {
+         "comment": {
+           "type": "string",
+           "title": "Comment (optional)",
+           "description": "Leave feedback on this chunk. Each submission = 1 TODO."
+         },
          "action": {
            "type": "string",
            "title": "Action",
            "enum": ["Next", "Comment & stay", "Previous", "Done"],
            "enumNames": ["Next →", "💬 Comment & stay", "← Previous", "Done ✓"],
            "default": "Next"
-         },
-         "comment": {
-           "type": "string",
-           "title": "Comment (optional)",
-           "description": "Leave feedback on this chunk. Each submission = 1 TODO."
          }
        },
        "required": ["action"]
