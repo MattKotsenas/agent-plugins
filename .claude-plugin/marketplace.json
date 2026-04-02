@@ -27,6 +27,12 @@
       "source": "plugins/prune",
       "description": "Interactive branch cleanup — catalog, verify, and delete stale branches with squash-merge awareness.",
       "version": "1.0.0"
+    },
+    {
+      "name": "git-good",
+      "source": "plugins/git-good",
+      "description": "Always-on safety guardrails for git operations — fixup-not-amend, surgical conflict resolution, rebase checklists, and destructive command protection.",
+      "version": "1.0.0"
     }
   ]
 }

@@ -36,6 +36,15 @@
       "skills": [
         "./skills/prune"
       ]
+    },
+    {
+      "name": "git-good",
+      "source": "git-good",
+      "description": "Always-on safety guardrails for git operations — fixup-not-amend, surgical conflict resolution, rebase checklists, and destructive command protection.",
+      "version": "1.0.0",
+      "skills": [
+        "./skills/git-good"
+      ]
     }
   ]
 }
