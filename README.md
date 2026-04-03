@@ -19,6 +19,6 @@ Add the marketplace, then install the plugin:
 | Plugin | Description |
 |--------|-------------|
 | [**Delve**](plugins/delve/) | Interactive diff review — walk through changes one chunk at a time and capture feedback as TODOs. |
-| [**git-good**](plugins/git-good/) | Always-on git safety guardrails — fixup-not-amend, surgical conflict resolution, rebase checklists, and destructive command protection. |
+| [**git-good**](plugins/git-good/) | Git safety guardrails - fixup-not-amend, surgical conflict resolution, rebase checklists, and destructive command protection. |
 | [**Prune**](plugins/prune/) | Interactive branch cleanup — catalog, verify, and delete stale branches with squash-merge awareness. |
 | [**yes-milord**](plugins/yes-milord/) | Warcraft II Peasant sound notifications — hear "Yes, milord" on prompt submit, "Work complete" when done. |

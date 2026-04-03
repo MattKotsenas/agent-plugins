@@ -1,35 +1,26 @@
 # git-good
 
-Always-on safety guardrails for git operations in AI-assisted development.
+Safety guardrails for git operations in AI-assisted development.
 
 ## What it does
 
-Provides ambient rules that prevent common LLM mistakes with git:
+One rule: **git history belongs to the user.** The skill enforces this through:
 
-- **Fixup, not amend** - uses `git commit --fixup` so you can review changes before squashing
-- **Surgical conflict resolution** - edits conflict markers instead of replacing whole files
-- **Rebase safety protocol** - pre-flight checklist, per-commit validation, post-rebase verification
-- **Conflict resolution maps** - plans resolutions before starting complex rebases
-- **rerere cache management** - prevents poisoned caches from silently replaying bad resolutions
-- **Destructive command safety** - never force-pushes, resets, or deletes without asking
+- **A decision gate** checked before every git command - a table mapping dangerous commands to safe alternatives
+- **Commits:** fixup-not-amend, specific file staging, convention matching
+- **Conflicts:** three-way reads, surgical edits, no whole-file replacement
+- **Destructive ops:** never force-push, reset, rebase, or delete without asking
+
+Reference sections cover rebase checklists, conflict resolution maps, rerere cache management, and recovery procedures.
 
 ## What it doesn't do
 
-This skill has no style opinions. It does not impose:
-
-- Branch naming conventions
-- Commit message formats
-- PR templates or workflows
-- Merge vs rebase preferences
-
-Instead, it checks the user's existing conventions and follows them.
+No style opinions. No branch naming, commit message formats, PR templates, or merge-vs-rebase preferences. It checks
+the user's existing conventions and follows them.
 
 ## Prerequisites
 
-The skill checks for and recommends:
-
-- `merge.conflictstyle = diff3` (required for conflict resolution)
-- `rerere.enabled = true` (recommended for rebase-heavy workflows)
+The skill checks for `merge.conflictstyle = diff3` on the first git operation (required for three-way conflict markers).
 
 ## Installation
 

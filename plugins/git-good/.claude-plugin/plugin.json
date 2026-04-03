@@ -1,7 +1,7 @@
 {
   "name": "git-good",
   "version": "1.0.0",
-  "description": "Always-on safety guardrails for git operations. Prevents common LLM mistakes: autonomous amends, whole-file conflict resolution, force-push without asking, and unvalidated rebases.",
+  "description": "Safety guardrails for git operations. Invoke before ANY session involving git commits, pushes, rebases, merges, conflict resolution, branch operations, or history rewriting. Prevents autonomous amends, force-push without asking, whole-file conflict resolution, and unvalidated rebases.",
   "author": {
     "name": "Matt Kotsenas",
     "url": "https://github.com/MattKotsenas"
