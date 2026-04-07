@@ -36,6 +36,7 @@ Before running any git command, check this table. If it matches a row, follow th
 | `git stash drop` / `git stash clear` | Ask user - permanently discards stashed work             |
 | Amend at a rebase `edit` stop        | `git commit --fixup=<sha>`, then `git rebase --continue` |
 | Create a fixup then autosquash it    | Stop. Let the user review the fixup commits first        |
+| `git rebase -i --autosquash`         | Audit fixup targets first (see Autosquash checklist)     |
 | HEAD is detached (no branch)         | Create a branch before committing: `git switch -c <name>`|
 | Rebase/merge already in progress     | Resolve or abort before doing anything else              |
 
@@ -60,8 +61,7 @@ This rule applies in every context:
 - **Never fixup + autosquash in sequence.** That's amend with extra steps. Let the user review first.
 
 **Target the commit that introduced the code you're fixing.** Use `git log -S` or `git blame` to find it. Don't target
-the most recent commit out of convenience - the fixup should squash into the commit where the bug originated, not just
-wherever is nearby.
+the most recent commit out of convenience. Before autosquashing, audit fixup targets (see Autosquash checklist).
 
 The only exception: the user explicitly says "amend."
 
@@ -157,9 +157,53 @@ Detailed procedures for complex operations. The rules above take precedence.
 **Post-rebase:**
 
 1. `git diff --stat temp/pre-rebase-<branch>` - unexpected changes mean something went wrong
-2. Build and test
-3. If broken: `git reset --hard temp/pre-rebase-<branch>`
-4. Don't delete safety branch until user confirms
+2. For reorder-only rebases (autosquash): verify tree identity.
+   `git rev-parse "temp/pre-rebase-<branch>^{tree}"` must equal `git rev-parse "HEAD^{tree}"`.
+   Same content, different history. If they differ, the rebase changed file content - something leaked.
+3. Build and test
+4. If broken: `git reset --hard temp/pre-rebase-<branch>`
+5. Don't delete safety branch until user confirms
+
+### Autosquash checklist
+
+Before running `git rebase -i --autosquash`, audit the fixup commits. During a review session, fixups accumulate
+and may incorrectly target commits by concept ("this is about feature X") rather than by file ("this file was introduced
+in commit Y"). Autosquash reorders fixups to follow their target, so a mistargetted fixup tries to modify files that
+don't exist yet.
+
+#### 1. Audit fixup targets
+
+For each `fixup!` commit, check that every file it modifies exists in the target commit's tree:
+
+```
+git show --stat <target-sha>
+```
+
+If the fixup modifies files not listed, it's mistargetted.
+
+#### 2. Fix mistargetted fixups
+
+- **Wrong target:** the fixup modifies files that all belong to a different commit. Retarget by creating a new fixup
+  against the correct SHA, cherry-pick the changes, and drop the old fixup.
+- **Mixed target:** the fixup modifies files from multiple original commits. Split it: stage files per-target and create
+  separate fixup commits for each.
+
+#### 3. Verify the todo list
+
+Run `git rebase -i --autosquash` and review the generated todo before proceeding. Each fixup should appear directly
+after the commit that introduced the files it modifies. If a fixup is ordered after a commit that doesn't contain its
+files, abort and fix the targeting.
+
+#### 4. Run the rebase and verify tree identity
+
+After autosquash completes, the tree hash must match the pre-rebase state (same content, different history):
+
+```
+git rev-parse "temp/pre-rebase-<branch>^{tree}"
+git rev-parse "HEAD^{tree}"
+```
+
+If they differ, something leaked during conflict resolution.
 
 ### Conflict resolution map
 
