@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "hooks": {
+    "userPromptSubmitted": [
+      {
+        "type": "command",
+        "powershell": "& \"${CLAUDE_PLUGIN_ROOT}/scripts/acquire.ps1\"",
+        "bash": "\"${CLAUDE_PLUGIN_ROOT}/scripts/acquire.sh\""
+      }
+    ],
+    "agentStop": [
+      {
+        "type": "command",
+        "powershell": "& \"${CLAUDE_PLUGIN_ROOT}/scripts/release.ps1\"",
+        "bash": "\"${CLAUDE_PLUGIN_ROOT}/scripts/release.sh\""
+      }
+    ],
+    "sessionEnd": [
+      {
+        "type": "command",
+        "powershell": "& \"${CLAUDE_PLUGIN_ROOT}/scripts/release.ps1\"",
+        "bash": "\"${CLAUDE_PLUGIN_ROOT}/scripts/release.sh\""
+      }
+    ]
+  }
+}

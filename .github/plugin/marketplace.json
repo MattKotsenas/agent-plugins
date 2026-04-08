@@ -45,6 +45,12 @@
       "skills": [
         "./skills/git-good"
       ]
+    },
+    {
+      "name": "vigil",
+      "source": "vigil",
+      "description": "Keep your system awake during active AI agent turns, let it sleep when idle. Cross-platform.",
+      "version": "1.0.0"
     }
   ]
 }

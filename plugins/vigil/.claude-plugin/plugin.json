@@ -1,0 +1,19 @@
+{
+  "name": "vigil",
+  "version": "1.0.0",
+  "description": "Keep your system awake during active AI agent turns, let it sleep when idle.",
+  "author": {
+    "name": "Matt Kotsenas",
+    "url": "https://github.com/MattKotsenas"
+  },
+  "repository": "https://github.com/MattKotsenas/agent-plugins",
+  "license": "MIT",
+  "keywords": [
+    "sleep",
+    "awake",
+    "power",
+    "battery",
+    "copilot",
+    "claude"
+  ]
+}

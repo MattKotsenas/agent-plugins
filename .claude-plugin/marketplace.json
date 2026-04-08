@@ -33,6 +33,12 @@
       "source": "plugins/git-good",
       "description": "Safety guardrails for git operations - fixup-not-amend, surgical conflict resolution, rebase checklists, and destructive command protection.",
       "version": "1.0.0"
+    },
+    {
+      "name": "vigil",
+      "source": "plugins/vigil",
+      "description": "Keep your system awake during active AI agent turns, let it sleep when idle. Cross-platform.",
+      "version": "1.0.0"
     }
   ]
 }
