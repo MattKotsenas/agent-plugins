@@ -25,5 +25,11 @@ The skill checks for `merge.conflictstyle = diff3` on the first git operation (r
 ## Installation
 
 ```
-/plugin install MattKotsenas/agent-plugins:git-good
+/plugin marketplace add MattKotsenas/agent-plugins
+/plugin install git-good@agent-plugins
 ```
+
+## How to use it
+
+Agents _should_ automatically load the skill when appropriate. However, I recommend either invoking it directly before
+a big merge or rebase so it is in recent context, or adding it to your custom instructions to load it on agent start.
