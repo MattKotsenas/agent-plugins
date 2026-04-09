@@ -1,11 +1,17 @@
 #!/bin/sh
 # Release: end the vigil for the agent session that spawned this hook
-# Inlined to avoid DLL locking with the running vigil start process
-VIGIL_DIR="${TMPDIR:-/tmp}/vigil"
-PID_FILE="$VIGIL_DIR/$PPID.pid"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-if [ -f "$PID_FILE" ]; then
-    VIGIL_PID=$(cat "$PID_FILE")
-    kill "$VIGIL_PID" 2>/dev/null
-    rm -f "$PID_FILE"
-fi
+case "$(uname)" in
+    Darwin)
+        VIGIL_DIR="${TMPDIR:-/tmp}/vigil"
+        PID_FILE="$VIGIL_DIR/$PPID.pid"
+        if [ -f "$PID_FILE" ]; then
+            kill "$(cat "$PID_FILE")" 2>/dev/null
+            rm -f "$PID_FILE"
+        fi
+        ;;
+    *)
+        dotnet run "$SCRIPT_DIR/vigil.cs" -- end "$PPID" > /dev/null 2>&1
+        ;;
+esac

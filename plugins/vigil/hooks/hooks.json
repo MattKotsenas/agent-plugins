@@ -1,6 +1,13 @@
 {
   "version": 1,
   "hooks": {
+    "sessionStart": [
+      {
+        "type": "command",
+        "powershell": "& \"${CLAUDE_PLUGIN_ROOT}/scripts/warmup.ps1\"",
+        "bash": "\"${CLAUDE_PLUGIN_ROOT}/scripts/warmup.sh\""
+      }
+    ],
     "userPromptSubmitted": [
       {
         "type": "command",
