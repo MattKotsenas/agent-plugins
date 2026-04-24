@@ -1,32 +1,36 @@
 ---
 name: delve
 description: >
-  Guide a human reviewer through a chunked, screen-sized diff review.
-  Collects feedback as actionable TODOs for downstream agents.
-  USE THIS SKILL when the user wants to review code changes interactively.
+  Guide a human reviewer through a chunked, screen-sized diff review. Collects feedback as actionable TODOs for
+  downstream agents. Use this skill when the user wants to review code changes, walk through a diff, do a code review,
+  look at what changed, or inspect a PR - even if they don't say "delve" explicitly. Also use when the user says
+  "review my changes", "what did I change", "let's go through the diff", or similar.
 ---
 
-# Delve — Interactive Diff Review
+# Delve - Interactive Diff Review
 
 Walk a reviewer through a diff one cohesive chunk at a time. Collect comments as structured TODOs that a downstream
 agent can act on.
+
+The core idea: a `diff-split.cs` tool handles all the mechanical work of splitting diffs into screen-sized chunk files.
+Your role is to resolve git refs, run that tool, decide presentation order from metadata, and guide the reviewer through
+each chunk. This separation exists because LLMs are unreliable at counting lines and enforcing size constraints, while
+tools are deterministic and exact.
 
 ---
 
 ## Phase 1: Choose Diff Baseline
 
-**Always prompt the user to choose.** Suggest a default based on session history, but never auto-select.
+Prompt the user to choose a baseline. Suggest a default based on session history, but let them pick.
 
-Present these options:
-
-- **Merge base** — changes since the branch diverged from the merge target
+- **Merge base** - changes since the branch diverged from the merge target
   *(default if this is the first diff action in the session)*
-- **Last session** — changes since the previous delve session
+- **Last session** - changes since the previous delve session
   *(default if a prior delve session exists)*
-- **Last change** — uncommitted changes if any exist, otherwise the last commit
-- **Custom ref** — user provides a base and/or head ref
+- **Last change** - uncommitted changes if any exist, otherwise the last commit
+- **Custom ref** - user provides a base and/or head ref
 
-After the user chooses, store the baseline in session state (see Phase 6).
+Store the baseline in session state (see Phase 5).
 
 ### Resolving the baseline to git refs
 
@@ -41,116 +45,125 @@ If the target branch is unknown, ask the user. Common defaults: `main`, `master`
 
 ---
 
-## Phase 2: Acquire the Diff
+## Phase 2: Split the Diff
 
-1. Run `git diff --stat <base> <head>` to get the file-level summary.
-2. For each changed file, run `git diff <base> <head> -- <file>` to get the full unified diff.
-3. Parse each file diff into **atomic hunks**. A hunk is one contiguous block of changes (one `@@` section in unified
-  diff format).
-4. For every hunk, record metadata:
-   - **file path**
-   - **change type**: added / modified / deleted / renamed
-   - **enclosing symbol**: the function, method, or class the hunk sits inside (read the `@@` context line and
-     surrounding code to determine this)
-   - **symbols referenced**: any functions, types, or variables that appear in the changed lines
+Run the `diff-split.cs` tool to split the diff into chunk files. The tool is at `tools/diff-split.cs` relative to
+this skill's plugin directory (e.g., `~/.copilot/installed-plugins/agent-plugins/delve/tools/diff-split.cs`).
 
-Process files one at a time to keep context usage bounded. Store hunk metadata as you go rather than holding every diff
-in context simultaneously.
+This is a .NET 10 file-based app - invoke it with `dotnet run <path-to-file.cs>`. The `--` separator is required to
+pass arguments to the app rather than to `dotnet run` itself.
+
+```
+dotnet run <path-to-diff-split.cs> -- \
+  --base <base-ref> \
+  --head <head-ref> \
+  --max-lines 40 \
+  --output-dir <session-dir>
+```
+
+The tool writes numbered `.diff` files and prints a JSON manifest to stdout:
+
+```json
+{
+  "base": "abc123",
+  "head": "def567",
+  "max_lines": 40,
+  "output_dir": "/path/to/session-dir",
+  "chunks": [
+    {
+      "index": 0,
+      "file": "delve-chunk-00.diff",
+      "lines": 35,
+      "oversized": false,
+      "path": "src/auth/token.ts",
+      "old_path": null,
+      "change_type": "modified",
+      "binary": false,
+      "hunk_headers": ["@@ -10,6 +10,12 @@ function validateToken"],
+      "hunk_count": 2
+    }
+  ]
+}
+```
+
+Store the manifest in session state. If the tool exits non-zero, report the stderr to the user and stop.
+
+The tool guarantees chunks never cross file boundaries and stay within the line limit (except single oversized hunks,
+which are flagged). This means you never need to parse diffs, count lines, split hunks, or validate sizes yourself -
+attempting to do so would bypass the guarantees the tool provides.
 
 ---
 
-## Phase 3: Plan the Chunk Order
+## Phase 3: Order the Chunks and Present the Plan
 
-Group and order hunks into **chunks** — each chunk is a set of related hunks that the reviewer will see together on one
-screen.
+Decide the presentation order using only the manifest metadata. The goal is presentation quality - showing the reviewer
+things in an order that helps them understand the change - not precise dependency analysis.
 
-### 3.1 Constraints (co-optimize all four)
+Reading the `.diff` files during ordering wastes context on raw diff text when the manifest already has the signals you
+need (file paths, change types, hunk headers with function names).
 
-> [!NOTE]
-> The **screen-fit target** is ~40 lines of diff per chunk. This value is
-> referenced throughout this skill.
+### Ordering heuristic
 
-1. **Screen fit** — a chunk should fit comfortably on one screen (within the screen-fit target). If a single hunk
-  exceeds this, it becomes its own chunk.
-2. **High cohesion** — group hunks that belong to the same logical change: same function, same module, same feature.
-3. **Utility function placement**:
-   - Show utility functions **first** if understanding them is required to comprehend later chunks.
-   - Show utility functions **last** if they are self-evident or rarely called.
-4. **Call flow** — prefer showing function implementations before their call sites. The reader should understand *what*
-  a function does before seeing *where* it's used.
+Apply these rules in priority order. When no rule provides a clear signal, preserve the tool's original order (which is
+already grouped by file).
 
-### 3.2 Heuristic: Build a Symbol Graph
+1. **New files before their consumers.** If a chunk has `change_type: "added"` and other chunks reference symbols
+   matching the new file's name, show the new file first. The reviewer should understand what a thing does before seeing
+   where it's used.
+2. **Group by module.** Chunks from the same directory should be adjacent.
+3. **Config and docs last.** Chunks for config files, READMEs, or documentation go at the end unless they are the
+   primary change. These are supporting context, not the core logic.
 
-1. From the hunk metadata, build a graph:
-   - Nodes = symbols (functions, classes, methods) that were changed or referenced in changed lines.
-   - Edges = call/reference relationships (implementation → call site).
-2. Score each potential chunk grouping by:
-   - **Cohesion**: how many hunks in the chunk share the same symbol or module.
-   - **Dependency direction**: does the chunk show implementations before uses?
-   - **Screen fit**: is the total diff size within the screen-fit target?
-   - **Utility likelihood**: is this a standalone helper? (heuristic: small function, many callers, few dependencies)
-3. Greedily assemble chunks that maximize the combined score.
+**Example:** Given chunks for `TokenValidator.cs` (modified), `LoginService.cs` (modified, hunk header references
+TokenValidator), `TokenClaims.cs` (added), `auth.json` (modified), `README.md` (modified) - a good order would be:
+TokenClaims (new type) -> TokenValidator (core logic) -> LoginService (consumer) -> auth.json -> README.md.
 
-### 3.3 Output: the Diff Plan
+### Show the Diff Plan
 
-Store the ordered list of chunks with their hunk assignments. This is the **Diff Plan** - the sequence the reviewer will
-walk through.
+Present the ordered plan to the user:
 
-### 3.4 Generate and Validate Chunk Files
+```
+Diff Plan
 
-Before showing the Diff Plan to the user, verify that each planned chunk fits within the screen-fit target and then
-generate the final chunk files. This step is mandatory - do not skip it.
+| #  | File                      | Type     | Lines |
+|----|---------------------------|----------|-------|
+| 1  | src/auth/TokenClaims.cs    | added    | 9     |
+| 2  | src/auth/TokenValidator.cs | modified | 35    |
+| 3  | src/auth/LoginService.cs   | modified | 28    |
+| 4  | config/auth.json           | modified | 13    |
+| 5  | README.md                  | modified | 11    |
 
-1. **Measure line counts before writing files.** For each planned chunk, check how many lines its diff would produce
-  WITHOUT writing to a file:
-   - **Unix:** `git diff <base> <head> -- <file1> [<file2>...] | wc -l`
-   - **Windows:** `git diff <base> <head> -- <file1> [<file2>...] | Measure-Object -Line`
-
-2. **Re-plan any chunk that exceeds 40 lines:**
-   - If it contains hunks from **multiple files**: split into one chunk per file and re-measure.
-   - If it contains **multiple hunks from one file**: split into one chunk per hunk and re-measure.
-   - If a **single hunk** still exceeds 40 lines: keep it as one chunk. It will be displayed with `view_range`
-    pagination in Phase 4.
-
-3. **Write all chunk files in one pass** once every chunk is validated. Use sequential numbering and output redirection
-  (no diff content in stdout):
-   ```
-   git diff <base> <head> -- <file1> [<file2>...] > <session-dir>/delve-chunk-01.diff
-   git diff <base> <head> -- <file3> > <session-dir>/delve-chunk-02.diff
-   ```
-   Where `<session-dir>` is the session workspace directory.
-
-4. **Show the user** the validated Diff Plan:
-   - Number of chunks
-   - Files covered
-   - Estimated review time (rough: ~1 min per 30 lines of diff)
+5 chunks - 5 files - ~3 min
+```
 
 ---
 
 ## Phase 4: Review Loop
 
-Walk through the Diff Plan one chunk at a time. All chunk diff files were pre-generated in Phase 3.4 - no shell commands
-are needed during the review loop.
+Walk through chunks in the presentation order. All chunk files are pre-generated, so no shell commands are needed here.
+Creating external viewer scripts or terminal panes would break the review flow - the user expects to stay in this
+conversation.
 
 ### For each chunk:
 
 1. **Display the chunk** using `show_file`:
-   - If the chunk file is **≤ 40 lines**:
+   - Normal chunks (`oversized: false`):
      ```
-     show_file(path: "<session-dir>/delve-chunk-NN.diff")
+     show_file(path: "<output_dir>/<file>")
      ```
-   - If the chunk file is **> 40 lines** (a single oversized hunk from
-     Phase 3.4 step 3):
+   - Oversized chunks (`oversized: true`): show all pages back-to-back before prompting. The reviewer shouldn't have
+     to ask to see the rest - that's easy to miss when it's buried in the comment form.
      ```
-     show_file(path: "<session-dir>/delve-chunk-NN.diff", view_range: [1, 40])
+     show_file(path: "<output_dir>/<file>", view_range: [1, 40])
+     show_file(path: "<output_dir>/<file>", view_range: [41, 80])
+     ...until the file is fully shown
      ```
-     Tell the user the chunk continues beyond what is shown. If they ask to see more, show the next 40-line window with
-     an updated `view_range`.
 
-2. **Prompt the user** with a structured form using `ask_user`:
+2. **Prompt the user** with `ask_user`. Comment comes first so the reviewer can capture thoughts while the diff is
+   fresh, then decide navigation. Fields render in property order, so keep `comment` above `action`.
    ```json
    {
-     "message": "Chunk N/M: <file path(s)> — <symbol(s)>",
+     "message": "Chunk N/M: <file path> - <hunk_headers summary>",
      "requestedSchema": {
        "properties": {
          "comment": {
@@ -172,93 +185,65 @@ are needed during the review loop.
    ```
 
 3. **Process the response:**
-   - If `comment` is provided: create a TODO (Phase 5).
-   - If `action` = **"Next"**: advance to the next chunk (with or without a comment). After leaving one or more
-    comments, flip the default to "Next".
-   - If `action` = **"Comment & stay"**: capture the TODO and re-display the same chunk's form for another comment.
-   - If `action` = **"Previous"**: go back one chunk. On the first chunk, tell the user they are at the start.
-   - If `action` = **"Done"**: skip to Phase 7.
-   - If the user **declines** the form (cancels without submitting): treat as "Next" with no comment.
+   - If `comment` is provided: create a TODO (see below).
+   - **Next**: advance to the next chunk. After leaving one or more comments, flip the default to "Next".
+   - **Comment & stay**: capture the TODO and re-display the same chunk's form.
+   - **Previous**: go back one chunk. On the first chunk, tell the user they are at the start.
+   - **Done**: skip to Phase 6.
+   - If the user **declines** the form: treat as "Next" with no comment.
 
-4. **"Next" on the last chunk** triggers completion (Phase 7).
+4. **"Next" on the last chunk** triggers completion (Phase 6).
 
----
+### TODOs
 
-## Phase 5: Capture TODOs
+Every comment becomes a TODO with enough context for a downstream agent to act on it without re-reading the full diff.
 
-Every comment the reviewer leaves becomes a TODO for a downstream agent.
+| Field              | Description                                                   |
+|--------------------|---------------------------------------------------------------|
+| **comment**        | The reviewer's comment, verbatim.                             |
+| **file_path**      | File the chunk covers (from manifest `path`).                 |
+| **hunk_headers**   | The `hunk_headers` from the manifest for this chunk.          |
+| **content_anchor** | First non-blank changed line in the chunk (read from the      |
+|                    | `.diff` file when creating the TODO). Content-based, not line |
+|                    | numbers, because line numbers drift on rebase.                |
 
-### TODO structure
-
-Each TODO must include:
-
-| Field              | Description                                                |
-|--------------------|------------------------------------------------------------|
-| **comment**        | The reviewer's comment, verbatim.                          |
-| **file_path**      | File(s) the chunk covers.                                  |
-| **symbol**         | Enclosing function/class/method name(s).                   |
-| **excerpt**        | A short (3–5 line) excerpt of the relevant changed code.   |
-| **content_anchor** | A content-based anchor: the first non-blank changed line   |
-|                    | in the hunk. NOT a line number (those drift on rebase).    |
-
-### Where to store TODOs (tiered — use the first available option)
-
-1. **TodoWrite / built-in todo tool** — if the session has a todo or task creation tool, write each TODO there.
-2. **External task tracker** — if a tool like Trekker is available, create issues/tasks there.
-3. **Session file fallback** — write TODOs as a JSON array to a file in the session workspace (e.g., `delve-todos.json`).
-4. **Context fallback** — if none of the above are available, output the TODO list directly in the conversation for the
-  user to copy.
+Store TODOs using the SQL tool if available (`delve_todos` table), otherwise write to
+`<session-dir>/delve-todos.json`, otherwise output in the conversation.
 
 ---
 
-## Phase 6: Session State
+## Phase 5: Session State
 
-Persist the following across the session so the review can be resumed or referenced later.
+Persist state so the review can be resumed later.
 
 | Key                | Value                                            |
 |--------------------|--------------------------------------------------|
 | `delve_baseline`   | The chosen baseline (type + resolved refs)       |
-| `delve_head_ref`   | The HEAD ref at review start (for "last session")|
-| `delve_plan`       | The ordered list of chunks with hunk assignments |
-| `delve_position`   | Current chunk index                              |
-| `delve_completed`  | Set of chunk indices the user has visited        |
-| `delve_todos`      | List of TODOs with context anchors               |
+| `delve_head_ref`   | HEAD ref at review start (for "last session")    |
+| `delve_manifest`   | The full manifest JSON from diff-split           |
+| `delve_order`      | The presentation order (list of chunk indices)    |
+| `delve_position`   | Current position in the presentation order       |
+| `delve_todos`      | List of TODOs with content anchors               |
 
-### Storage strategy (tiered — use the first available option)
+Use the SQL tool if available:
+```sql
+CREATE TABLE IF NOT EXISTS delve_state (key TEXT PRIMARY KEY, value TEXT);
+```
+Otherwise write to `<session-dir>/delve-state.json`.
 
-1. **SQL tool** — if available, create a `delve_state` table:
-   ```sql
-   CREATE TABLE IF NOT EXISTS delve_state (
-     key   TEXT PRIMARY KEY,
-     value TEXT
-   );
-   ```
-   Store each key/value pair as a row. Values are JSON-encoded.
-
-2. **Session file fallback** — write state as a single JSON file in the session workspace (e.g., `delve-state.json`).
-
-At the **start of a new delve session**, check for existing state:
-- If `delve_head_ref` exists from a prior session, offer it as the "Last session" baseline option.
-- If `delve_plan` exists and the baseline hasn't changed, offer to resume the previous review from `delve_position`.
+At the start of a new delve session, check for existing state. If `delve_head_ref` exists from a prior session, offer
+"Last session" as a baseline option. If `delve_manifest` exists and the baseline hasn't changed, offer to resume from
+the previous position.
 
 ---
 
-## Phase 7: Completion
+## Phase 6: Completion
 
 When the user advances past the last chunk:
 
-1. **Summarize the review:**
-   - Total chunks reviewed
-   - Number of TODOs captured
-   - Files covered
-
-2. **If TODOs exist**, offer to:
-   - List all TODOs with their context anchors
-   - Revisit a specific TODO's chunk
-   - Hand off the TODO list to an implementation agent
-
-3. **Update session state:**
-   - Store the current HEAD as `delve_head_ref` so the next session can offer "changes since last session" as a baseline.
+1. Summarize: chunks reviewed, TODOs captured, files covered.
+2. If TODOs exist, offer to list them, revisit a specific chunk, or hand off to an implementation agent.
+3. Store the current HEAD as `delve_head_ref` for next session.
 
 ---
 
@@ -266,11 +251,9 @@ When the user advances past the last chunk:
 
 ```
 /delve
-  1. Choose baseline  →  merge base / last session / last change / custom
-  2. Acquire diff     →  git diff per file, parse into hunks
-  3. Plan chunks      →  group by cohesion, order by call flow
-     Validate chunks  →  generate .diff files, enforce ≤ 40 lines, split if needed
-  4. Review loop      →  show_file chunk → ask_user (action + comment) → repeat
-  5. Capture TODOs    →  structured TODOs with content anchors
-  6. Complete         →  summary + TODO handoff
+  1. Choose baseline  →  prompt user for merge base / last session / last change / custom
+  2. Split diff       →  run diff-split.cs tool, capture manifest
+  3. Order chunks     →  reorder using manifest metadata only, show Diff Plan
+  4. Review loop      →  show_file chunk → ask_user → capture TODOs → repeat
+  5. Complete         →  summary + TODO handoff
 ```
