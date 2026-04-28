@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "hooks": {
+    "agentStop": [
+      {
+        "type": "command",
+        "powershell": "& \"${CLAUDE_PLUGIN_ROOT}/scripts/notify.ps1\""
+      }
+    ],
+    "errorOccurred": [
+      {
+        "type": "command",
+        "powershell": "& \"${CLAUDE_PLUGIN_ROOT}/scripts/notify.ps1\""
+      }
+    ],
+    "preToolUse": [
+      {
+        "type": "command",
+        "powershell": "& \"${CLAUDE_PLUGIN_ROOT}/scripts/notify.ps1\""
+      }
+    ]
+  }
+}

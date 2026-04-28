@@ -39,6 +39,12 @@
       "source": "plugins/vigil",
       "description": "Keep your system awake during active AI agent turns, let it sleep when idle. Cross-platform.",
       "version": "1.0.0"
+    },
+    {
+      "name": "toasty",
+      "source": "plugins/toasty",
+      "description": "Windows toast notifications when your Copilot CLI agent needs attention. Powered by toasty.",
+      "version": "1.0.0"
     }
   ]
 }
