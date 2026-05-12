@@ -20,7 +20,7 @@ the user's existing conventions and follows them.
 
 ## Prerequisites
 
-The skill checks for `merge.conflictstyle = diff3` on the first git operation (required for three-way conflict markers).
+The skill checks for `merge.conflictstyle = diff3` or `zdiff3` on the first git operation (required for three-way conflict markers).
 
 ## Installation
 

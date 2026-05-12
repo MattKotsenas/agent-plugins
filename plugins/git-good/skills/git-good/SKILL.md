@@ -40,8 +40,8 @@ Before running any git command, check this table. If it matches a row, follow th
 | HEAD is detached (no branch)         | Create a branch before committing: `git switch -c <name>`|
 | Rebase/merge already in progress     | Resolve or abort before doing anything else              |
 
-**First git operation in a session?** Run `git config --get merge.conflictstyle`. If not `diff3`, warn the user:
-set `git config --global merge.conflictstyle diff3` for three-way conflict markers.
+**First git operation in a session?** Run `git config --get merge.conflictstyle`. If not `diff3` or `zdiff3`, warn the user:
+set `git config --global merge.conflictstyle zdiff3` for three-way conflict markers.
 
 ## Commits
 
@@ -233,10 +233,10 @@ rerere caches conflict resolutions for replay. A bad resolution gets silently re
 
 ### Prerequisites
 
-**merge.conflictstyle = diff3** (checked on first git op):
+**merge.conflictstyle = diff3 or zdiff3** (checked on first git op):
 
-Without diff3, conflict markers only show two sides. The base version is critical for understanding what each side
-changed. Set with `git config --global merge.conflictstyle diff3`.
+Without diff3/zdiff3, conflict markers only show two sides. The base version is critical for understanding what each side
+changed. Set with `git config --global merge.conflictstyle zdiff3`.
 
 **rerere.enabled = true** (optional):
 
