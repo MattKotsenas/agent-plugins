@@ -6,37 +6,36 @@
   },
   "metadata": {
     "description": "Plugin marketplace for Claude Code and Copilot CLI agent plugins.",
-    "version": "1.0.0",
-    "pluginRoot": "./plugins"
+    "version": "1.0.0"
   },
   "plugins": [
     {
       "name": "delve",
-      "source": "plugins/delve",
+      "source": "./plugins/delve",
       "description": "Interactive diff review skill that walks a human reviewer through chunked, screen-sized diffs and captures TODOs for downstream agents.",
       "version": "1.0.0"
     },
     {
       "name": "yes-milord",
-      "source": "plugins/yes-milord",
+      "source": "./plugins/yes-milord",
       "description": "Warcraft II Peasant sound notifications on agent lifecycle events.",
       "version": "1.0.0"
     },
     {
       "name": "prune",
-      "source": "plugins/prune",
+      "source": "./plugins/prune",
       "description": "Interactive branch cleanup — catalog, verify, and delete stale branches with squash-merge awareness.",
       "version": "1.0.0"
     },
     {
       "name": "git-good",
-      "source": "plugins/git-good",
+      "source": "./plugins/git-good",
       "description": "Safety guardrails for git operations - fixup-not-amend, surgical conflict resolution, rebase checklists, and destructive command protection.",
       "version": "1.0.0"
     },
     {
       "name": "toasty",
-      "source": "plugins/toasty",
+      "source": "./plugins/toasty",
       "description": "Windows toast notifications when your Copilot CLI agent needs attention. Powered by toasty.",
       "version": "1.0.0"
     }
