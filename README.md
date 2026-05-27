@@ -24,3 +24,4 @@ Add the marketplace, then install the plugin:
 | ~~[**Vigil**](plugins/vigil/)~~ | **Removed** — superseded by Copilot CLI's built-in `keepAlive: "busy"` setting in `~/.copilot/settings.json` ([docs](https://docs.github.com/copilot/how-tos/copilot-cli)). If previously installed, run `/plugin uninstall vigil@agent-plugins`. |
 | [**yes-milord**](plugins/yes-milord/) | Warcraft II Peasant sound notifications - hear "Yes, milord" on prompt submit, "Work complete" when done. |
 | [**toasty**](plugins/toasty/) | Windows toast notifications when the agent needs attention - powered by [toasty](https://github.com/shanselman/toasty). |
+| [**gnhf**](plugins/gnhf/) | Good Night, Have Fun - one provably-correct, complexity-reducing change per invocation, on its own branch off the default branch. |

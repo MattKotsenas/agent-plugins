@@ -38,6 +38,12 @@
       "source": "./plugins/toasty",
       "description": "Windows toast notifications when your Copilot CLI agent needs attention. Powered by toasty.",
       "version": "1.0.0"
+    },
+    {
+      "name": "gnhf",
+      "source": "./plugins/gnhf",
+      "description": "Good Night, Have Fun — one provably-correct, complexity-reducing change per invocation, on its own branch off the default branch.",
+      "version": "1.0.0"
     }
   ]
 }

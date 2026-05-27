@@ -1,0 +1,19 @@
+{
+  "name": "gnhf",
+  "version": "1.0.0",
+  "description": "Good Night, Have Fun. Make one provably-correct, complexity-reducing change on a fresh branch off the default branch, then stop. A minimal take on gnhf for use with autopilot or external loops.",
+  "author": {
+    "name": "Matt Kotsenas",
+    "url": "https://github.com/MattKotsenas"
+  },
+  "repository": "https://github.com/MattKotsenas/agent-plugins",
+  "license": "MIT",
+  "keywords": [
+    "git",
+    "refactor",
+    "autopilot",
+    "overnight",
+    "copilot",
+    "claude"
+  ]
+}
