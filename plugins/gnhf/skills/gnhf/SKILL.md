@@ -33,29 +33,29 @@ The structure is six phases. Each phase has a single job. Order matters:
 
 Establish a known-good starting point.
 
-1. Confirm the working tree is clean: `git status --porcelain` is empty.
-   Stashing or auto-committing the user's work-in-progress is out of scope
-   and would obscure what changed in this iteration. If the tree is dirty,
-   stop and report.
-2. Confirm the repo has commits: `git rev-parse HEAD` succeeds. An empty
+1. Confirm the repo has commits: `git rev-parse HEAD` succeeds. An empty
    repo has nothing to branch from.
-3. Fetch if `origin` is configured: `git fetch origin --quiet`. This must
+2. Fetch if `origin` is configured: `git fetch origin --quiet`. This must
    happen before reading `origin/HEAD`, which can otherwise be stale.
-4. Identify the default branch, in order:
+3. Identify the default branch, in order:
    - `git symbolic-ref --short refs/remotes/origin/HEAD` if set
    - first of `origin/main`, `origin/master`, `origin/dev` that exists
    - first of local `main`, `master`, `dev` that exists
    - else stop and report.
-5. Detect worktree mode: `git worktree list` shows more than one
+4. Detect worktree mode: `git worktree list` shows more than one
    worktree. In worktree mode, the skill creates an additional worktree
    for this iteration instead of switching the current worktree's branch.
-6. If the current worktree's branch matches `refactor/gnhf-*`, you're
-   inside an earlier gnhf iteration:
-   - Branch mode: switch to the default branch before continuing. This
-     prevents accidental stacking when `/gnhf` is re-invoked back-to-back.
-   - Worktree mode: stop and ask the user to re-invoke from a worktree
-     not on a `refactor/gnhf-*` branch. A worktree on a gnhf branch is
-     in the middle of someone else's review surface; don't repurpose it.
+5. Prepare the launch point:
+   - Branch mode: this iteration runs in the current working tree, so
+     its state matters. If `git status --porcelain` is non-empty, stop
+     and report — stashing the user's work-in-progress would obscure
+     what changed in this iteration. If the current branch matches
+     `refactor/gnhf-*`, switch to the default branch first to prevent
+     accidental stacking when `/gnhf` is re-invoked back-to-back.
+   - Worktree mode: no preparation needed. Phase 4 step 3 creates a
+     fresh worktree from `<default-ref>` regardless of the invoking
+     directory or branch, so `/gnhf /gnhf` simply produces two
+     parallel worktrees.
 
 ---
 
@@ -326,7 +326,7 @@ and erode the one-change contract.
 Refuse this iteration if any of these hold. If you already branched, clean
 up as in Phase 4 step 6 before refusing.
 
-- The working tree is dirty.
+- Branch mode is active and the current worktree is dirty.
 - The repository has no commits.
 - No default branch can be identified.
 - After a reasonable scan, no candidate satisfies Phase 2.
