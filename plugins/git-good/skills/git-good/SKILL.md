@@ -36,7 +36,7 @@ Before running any git command, check this table. If it matches a row, follow th
 | `git stash drop` / `git stash clear` | Ask user - permanently discards stashed work             |
 | Amend at a rebase `edit` stop        | `git commit --fixup=<sha>`, then `git rebase --continue` |
 | Create a fixup then autosquash it    | Stop. Let the user review the fixup commits first        |
-| `git rebase -i --autosquash`         | Audit fixup targets first (see Autosquash checklist)     |
+| `git rebase -i --autosquash`         | Audit fixup targets first (see [Autosquash checklist](#autosquash-checklist)) |
 | HEAD is detached (no branch)         | Create a branch before committing: `git switch -c <name>`|
 | Rebase/merge already in progress     | Resolve or abort before doing anything else              |
 
@@ -61,7 +61,7 @@ This rule applies in every context:
 - **Never fixup + autosquash in sequence.** That's amend with extra steps. Let the user review first.
 
 **Target the commit that introduced the code you're fixing.** Use `git log -S` or `git blame` to find it. Don't target
-the most recent commit out of convenience. Before autosquashing, audit fixup targets (see Autosquash checklist).
+the most recent commit out of convenience. Before autosquashing, audit fixup targets (see [Autosquash checklist](#autosquash-checklist)).
 
 The only exception: the user explicitly says "amend."
 
@@ -140,6 +140,34 @@ When approved, follow these protocols:
 
 Detailed procedures for complex operations. The rules above take precedence.
 
+### Conflict prediction
+
+Before a non-trivial rebase or merge, predict the conflict surface before touching the working
+tree so you can plan resolution, choose merge vs. rebase, or warn the user up front.
+
+Get the scope:
+
+```
+git log --oneline <target>..HEAD
+```
+
+Predict conflicts using Git's real merge engine, in memory:
+
+```
+git merge-tree --write-tree --name-only <target> HEAD
+echo "exit=$?"
+```
+
+`--write-tree` runs without changing the working tree, index, or HEAD. Exit code 0 = clean,
+1 = conflicts, 2+ = error. The merged tree OID is written first, followed by conflicted paths.
+Drop `--name-only` to see modes and stages (distinguishes content, modify/delete, rename).
+
+For rebases, treat the result as a lower bound. A rebase replays commits one at a time and can
+surface conflicts in intermediate states that a single merge resolves silently.
+
+If the predicted conflict set is non-trivial (modify/delete, renames, many files), document a
+resolution strategy per file before starting.
+
 ### Rebase checklist
 
 **Pre-flight:**
@@ -148,8 +176,9 @@ Detailed procedures for complex operations. The rules above take precedence.
 2. Verify clean: `git status --porcelain` (must be empty)
 3. Safety branch: `git branch temp/pre-rebase-<branch>`
 4. Note SHA: `git rev-parse --short HEAD`
+5. For non-trivial rebases, predict conflicts (see [Conflict prediction](#conflict-prediction))
 
-**Per-commit conflicts:** Follow the Conflicts section above. Additionally:
+**Per-commit conflicts:** Follow the [Conflicts](#conflicts) section above. Additionally:
 
 - If rerere is enabled: `git rerere diff` to inspect what rerere auto-applied
 - If cached resolution looks wrong: `git rerere forget <file>`
@@ -205,15 +234,6 @@ git rev-parse "HEAD^{tree}"
 
 If they differ, something leaked during conflict resolution.
 
-### Conflict resolution map
-
-For complex rebases (10+ commits or expected multiple conflicts), build a map before starting:
-
-1. List commits: `git log --oneline <target>..<branch>`
-2. Files per commit: `git show --stat --oneline <sha>`
-3. Files changed on target: `git diff --name-only $(git merge-base HEAD <target>) <target>`
-4. Intersecting files will likely conflict. Document resolution strategy per file.
-
 ### rerere cache
 
 rerere caches conflict resolutions for replay. A bad resolution gets silently re-applied.
@@ -238,9 +258,14 @@ rerere caches conflict resolutions for replay. A bad resolution gets silently re
 Without diff3/zdiff3, conflict markers only show two sides. The base version is critical for understanding what each side
 changed. Set with `git config --global merge.conflictstyle zdiff3`.
 
+**git >= 2.38** (required for [Conflict prediction](#conflict-prediction)):
+
+`git merge-tree --write-tree` was added in Git 2.38 (October 2022). Earlier versions can't predict
+conflicts without touching the working tree. Check with `git --version`.
+
 **rerere.enabled = true** (optional):
 
 Caches conflict resolutions for replay. Useful for stacked-diff workflows. Set with
-`git config --global rerere.enabled true`. See rerere cache section above.
+`git config --global rerere.enabled true`. See [rerere cache](#rerere-cache) section above.
 
 
