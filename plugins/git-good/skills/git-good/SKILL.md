@@ -193,6 +193,33 @@ resolution strategy per file before starting.
 4. If broken: `git reset --hard temp/pre-rebase-<branch>`
 5. Don't delete safety branch until user confirms
 
+### Staged rebasing checklist
+
+Staged rebasing splits a single large rebase into a sequence of smaller rebases, each landing on
+an intermediate target commit on the way to the final target. Use when a rebase is too large to
+keep coherent in one pass: many predicted conflicts, hundreds of commits behind the target, or a
+previous single-shot attempt ran out of context. Each stage produces a verifiable checkpoint and
+contains the blast radius of a bad resolution. Total conflict work does not decrease; the wins are
+checkpointing and smaller per-stage context.
+
+**Pre-flight:**
+
+1. Identify candidate intermediate targets on the path to the final target: released tags,
+   CI-green merges to the default branch, or marked release commits. Avoid arbitrary midpoints -
+   checkpoints require a working build. Verify ancestry with
+   `git merge-base --is-ancestor <candidate> <final-target>`.
+2. Build an ordered list of candidate stages from current base to final target. Use
+   [conflict prediction](#conflict-prediction) to keep only stages where rebasing onto the
+   intermediate is materially easier than skipping past it. If no stage helps, skip staging.
+3. Enable [rerere](#rerere-cache) if appropriate, and plan to inspect `git rerere diff` at each
+   stage before continuing - staging can amplify a bad cached resolution across multiple stages.
+
+**Per stage:** Follow the [Rebase checklist](#rebase-checklist), substituting
+`temp/pre-rebase-<branch>-stage-N` for every reference to `temp/pre-rebase-<branch>`. After the
+stage succeeds, advance to the next stage and repeat until done.
+
+**Wrap-up:** Don't delete stage safety branches until the user confirms the full sequence is good.
+
 ### Autosquash checklist
 
 Before running `git rebase -i --autosquash`, audit the fixup commits. During a review session, fixups accumulate
