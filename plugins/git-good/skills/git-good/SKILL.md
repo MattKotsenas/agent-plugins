@@ -227,6 +227,12 @@ and may incorrectly target commits by concept ("this is about feature X") rather
 in commit Y"). Autosquash reorders fixups to follow their target, so a mistargetted fixup tries to modify files that
 don't exist yet.
 
+**Get explicit user approval before running the rebase.** `git rebase -i --autosquash` rewrites history, which the
+gate table lists as "Stop. Let the user review the fixup commits first" and the destructive-operations list above
+forbids running "without explicit user approval." This checklist audits the fixups so the user has something to
+review; it does not authorize an unprompted squash. Do the audit (steps 1-3), surface the result, and run the rebase
+(step 4) only after the user approves.
+
 #### 1. Audit fixup targets
 
 For each `fixup!` commit, check that every file it modifies exists in the target commit's tree:
@@ -250,9 +256,11 @@ Run `git rebase -i --autosquash` and review the generated todo before proceeding
 after the commit that introduced the files it modifies. If a fixup is ordered after a commit that doesn't contain its
 files, abort and fix the targeting.
 
-#### 4. Run the rebase and verify tree identity
+#### 4. Run the rebase (only after user approval) and verify tree identity
 
-After autosquash completes, the tree hash must match the pre-rebase state (same content, different history):
+Only once the user has approved the squash (see the gate at the top of this checklist) run
+`git rebase -i --autosquash`. After autosquash completes, the tree hash must match the pre-rebase state
+(same content, different history):
 
 ```
 git rev-parse "temp/pre-rebase-<branch>^{tree}"
