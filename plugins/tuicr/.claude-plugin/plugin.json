@@ -1,0 +1,20 @@
+{
+  "name": "tuicr",
+  "version": "1.0.0",
+  "description": "Drive tuicr, the terminal code-review TUI, from a Copilot session. Invoke whenever the user wants to review changes together, says 'let's review', 'pull up the diff', 'open tuicr', or asks you to read back the review comments they left. Uses the `tuicr review` CLI to attach to a session, read the user's comments, and add agent comments; launches the review pane in the agent's own psmux pane, not the active window.",
+  "author": {
+    "name": "Matt Kotsenas",
+    "url": "https://github.com/MattKotsenas"
+  },
+  "repository": "https://github.com/MattKotsenas/agent-plugins",
+  "license": "MIT",
+  "keywords": [
+    "code-review",
+    "tuicr",
+    "diff",
+    "psmux",
+    "powershell",
+    "copilot",
+    "claude"
+  ]
+}

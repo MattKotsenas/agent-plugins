@@ -44,6 +44,12 @@
       "source": "./plugins/gnhf",
       "description": "Good Night, Have Fun — one provably-correct, complexity-reducing change per invocation, on its own branch off the default branch.",
       "version": "1.0.0"
+    },
+    {
+      "name": "tuicr",
+      "source": "./plugins/tuicr",
+      "description": "Drive the tuicr terminal code-review TUI from a Copilot session - attach to a review, read the user's comments, add agent comments, and launch the review pane in the agent's own psmux pane.",
+      "version": "1.0.0"
     }
   ]
 }
