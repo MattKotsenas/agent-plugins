@@ -60,6 +60,15 @@
       "skills": [
         "./skills/gnhf"
       ]
+    },
+    {
+      "name": "tuicr",
+      "source": "tuicr",
+      "description": "Drive the tuicr terminal code-review TUI from a Copilot session - attach to a review, read the user's comments, add agent comments, and launch the review pane in the agent's own psmux pane.",
+      "version": "1.0.0",
+      "skills": [
+        "./skills/tuicr"
+      ]
     }
   ]
 }
