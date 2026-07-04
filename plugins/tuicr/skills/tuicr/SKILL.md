@@ -111,6 +111,10 @@ $pane = tmux split-window -t $env:TMUX_PANE -h -d -P -F '#{pane_id}' -l 65% -c C
 # `-h` = side-by-side (left/right); omit it and you get a top/bottom stack.
 ```
 
+Run `tuicr` as the pane command directly, as shown. Avoid wrapping it in `pwsh -Command "..."`: that loads the
+interactive profile (prompt, module imports) the review pane never needs, and a heavy profile can stall or hang
+before `tuicr` starts. If a compound command forces you through pwsh, pass `-NoProfile`.
+
 Then attach with `tuicr review list --repo C:\path\to\repo` to capture the slug, and enter the read loop above.
 tuicr waits for the human, so allow a long timeout (~10 min) if your tool blocks on the command.
 
