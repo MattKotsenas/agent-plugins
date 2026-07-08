@@ -1,0 +1,18 @@
+{
+  "name": "measure-twice",
+  "version": "1.0.0",
+  "description": "A review gate that blocks the agent from finishing a turn until it runs your review agents. Measure twice, cut once.",
+  "author": {
+    "name": "Matt Kotsenas",
+    "url": "https://github.com/MattKotsenas"
+  },
+  "repository": "https://github.com/MattKotsenas/agent-plugins",
+  "license": "MIT",
+  "keywords": [
+    "review",
+    "gate",
+    "quality",
+    "hooks",
+    "copilot"
+  ]
+}

@@ -29,6 +29,15 @@
       ]
     },
     {
+      "name": "measure-twice",
+      "source": "measure-twice",
+      "description": "A review gate that blocks the agent from finishing a turn until it runs your review agents. Measure twice, cut once.",
+      "version": "1.0.0",
+      "skills": [
+        "./skills/measure-twice"
+      ]
+    },
+    {
       "name": "prune",
       "source": "prune",
       "description": "Interactive branch cleanup — catalog, verify, and delete stale branches with squash-merge awareness.",
