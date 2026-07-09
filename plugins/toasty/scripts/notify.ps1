@@ -32,6 +32,14 @@ Write-Log "RAW INPUT: $inputJson"
 
 $hookInput = $inputJson | ConvertFrom-Json
 
+# --- Only notify for the main agent, not subagents ---
+# The main agent's sessionId is the CLI session GUID; a subagent's stop carries the spawning
+# tool-call id instead (e.g. "toolu_...", "call_..."), which is never a GUID.
+if ($hookInput.sessionId -and $hookInput.sessionId -notmatch '^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$') {
+    Write-Log "SKIP: subagent event (sessionId=$($hookInput.sessionId))"
+    exit 0
+}
+
 # --- Determine event type from payload ---
 # agentStop:      { timestamp, cwd, sessionId, transcriptPath, stopReason }
 # errorOccurred:  { timestamp, cwd, error: { message, name, stack } }
