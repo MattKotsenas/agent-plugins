@@ -128,7 +128,7 @@ function Invoke-MTGate {
     # agent must rejoin it to satisfy the gate.
     $mid = [Math]::Floor($nonce.Length / 2)
     $split = $nonce.Substring(0, $mid) + ' ' + $nonce.Substring($mid)
-    "$($Config.prompt)`n`nWhen you are done, output this token on its own line with the internal space removed, then stop: $split"
+    "$($Config.prompt)`n`nTo release the gate, make this token the last line of your reply, with the internal space removed: $split"
 }
 
 Export-ModuleMember -Function Get-MTCopilotHome, Get-MTConfigPath, Get-MTSessionDir, Get-MTConfig, Save-MTConfig, Get-MTSessionMode, Set-MTSessionMode, Get-MTStatePath, Get-MTLastAssistantMessage, Invoke-MTGate
