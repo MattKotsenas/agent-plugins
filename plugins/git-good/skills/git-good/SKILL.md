@@ -39,6 +39,7 @@ Before running any git command, check this table. If it matches a row, follow th
 | `git rebase -i --autosquash`         | Audit fixup targets first (see [Autosquash checklist](#autosquash-checklist)) |
 | HEAD is detached (no branch)         | Create a branch before committing: `git switch -c <name>`|
 | Rebase/merge already in progress     | Resolve or abort before doing anything else              |
+| Running git with no TTY              | Neutralize editors: `-c core.editor=true -c sequence.editor=true` (see [Non-interactive execution](#non-interactive-execution-agent-shells)) |
 
 **First git operation in a session?** Run `git config --get merge.conflictstyle`. If not `diff3` or `zdiff3`, warn the user:
 set `git config --global merge.conflictstyle zdiff3` for three-way conflict markers.
@@ -246,7 +247,7 @@ If the fixup modifies files not listed, it's mistargetted.
 
 #### 3. Verify the todo list
 
-Run `git rebase -i --autosquash` and review the generated todo before proceeding. Each fixup should appear directly
+Run `git rebase -i --autosquash` and review the generated todo before proceeding. Running with no TTY, dump the todo for review instead of opening an editor (see [Non-interactive execution](#non-interactive-execution-agent-shells)). Each fixup should appear directly
 after the commit that introduced the files it modifies. If a fixup is ordered after a commit that doesn't contain its
 files, abort and fix the targeting.
 
@@ -277,6 +278,31 @@ rerere caches conflict resolutions for replay. A bad resolution gets silently re
 - **Safety branch:** `git reset --hard temp/pre-rebase-<branch>`
 - **Bad amend:** `git reset --soft HEAD@{1}` (restores original commit, amend changes stay staged)
 - Always explain to the user: what went wrong, what you're restoring to, what they should verify.
+
+### Non-interactive execution (agent shells)
+
+Git opens the user's editor whenever it needs a message or plan it can't infer: `git rebase --continue` after a
+conflict (to confirm the message), `git rebase -i` (the todo list), `squash` and `reword` steps, `git merge --edit`,
+and `git commit` with no `-m`. In a terminal that's fine. In a shell with no TTY - where an agent runs - the editor has
+nothing to attach to, so the command hangs with no error and no output - an unbounded stall.
+
+Two editors trigger this: the message editor (`core.editor`) and the sequence editor (`sequence.editor`, the
+`rebase -i` todo). Point both at `true` for the command - a no-op editor that exits 0 without writing, so git keeps
+what it pre-filled: the original message on a plain-pick `--continue`, the flag-ordered todo on `--autosquash`.
+
+```
+git -c core.editor=true -c sequence.editor=true rebase --continue
+git -c core.editor=true -c sequence.editor=true rebase -i --autosquash <base>
+```
+
+A `GIT_EDITOR` or `GIT_SEQUENCE_EDITOR` exported in the environment overrides these, and that's intended: git-good
+supplies a default for the TTY-less case, it doesn't override an editor the harness set on purpose.
+
+To author a message rather than keep git's, pass it explicitly: `git commit -m` for a standalone commit, `--fixup` at
+a rebase `edit` stop (git-good's rule regardless), or a scripted editor writing to the file git hands it (`$1`) for a
+`reword`. To inspect what git would open rather than accept it - the `rebase -i` todo, say - point the editor at a
+script that prints the file git hands it (`$1`) and exits non-zero, which aborts cleanly for review; rerun with `true`
+once it checks out. Hooks still run and can hang too, but a silent stall is usually the editor.
 
 ### Prerequisites
 
